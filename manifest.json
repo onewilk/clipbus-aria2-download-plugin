@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 2,
+  "plugin": {
+    "id": "plugin.pasty.aria2",
+    "title": "Aria2 Downloader",
+    "version": "0.1.0"
+  },
+  "install": {
+    "runtime": "node",
+    "entry": "scripts/install.mjs"
+  },
+  "runtime": {
+    "nodeEntry": "dist/runtime/index.cjs",
+    "uiRoot": "dist/ui"
+  },
+  "permissions": [],
+  "attachmentRenderers": [
+    {
+      "id": "download-renderer",
+      "title": "Aria2 Download",
+      "attachmentType": "plugin.pasty.aria2.download",
+      "height": 380,
+      "uiEntry": "renderers/download-renderer/index.html"
+    }
+  ],
+  "detectors": [
+    {
+      "id": "link-detector",
+      "title": "Aria2 Link Detector",
+      "supportedInputKinds": ["text", "path_reference"],
+      "attachmentTypes": ["plugin.pasty.aria2.download"]
+    }
+  ],
+  "actions": []
+}
