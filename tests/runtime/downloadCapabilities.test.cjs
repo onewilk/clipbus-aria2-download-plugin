@@ -212,7 +212,7 @@ test("download detector rejects prose with embedded URLs", async () => {
   assert.equal(artifacts.length, 0);
 });
 
-test("download renderer resolves submit button", () => {
+test("download renderer resolves without host action buttons", () => {
   const { resolveAttachment } = require(path.resolve(
     projectRoot,
     "src/runtime/renderers/downloadRenderer.js"
@@ -240,7 +240,7 @@ test("download renderer resolves submit button", () => {
 
   const resolved = resolveAttachment({ attachment: { payloadJson } });
   assert.equal(resolved.displayName, "Aria2 Download");
-  assert.deepEqual(resolved.buttons.map((entry) => entry.id), ["submit-download"]);
+  assert.deepEqual(resolved.buttons, []);
 });
 
 test("download renderer submits aria2 addUri through JSON-RPC", async () => {
