@@ -214,6 +214,10 @@ function buildDisplayName(value, type) {
 
   try {
     const parsed = new URL(value);
+    const attname = parsed.searchParams.get("attname");
+    if (attname && attname.trim()) {
+      return attname.trim();
+    }
     const basename = parsed.pathname.split("/").filter(Boolean).pop();
     return basename ? decodeURIComponent(basename) : parsed.host;
   } catch {

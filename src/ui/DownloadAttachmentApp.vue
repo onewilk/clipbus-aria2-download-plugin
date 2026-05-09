@@ -1,12 +1,11 @@
 <template>
-  <main class="download-shell">
+  <main class="download-shell" :style="themeStyle">
     <section v-if="payload" class="download-panel">
       <header class="download-header">
         <div class="download-heading">
           <p class="download-eyebrow">aria2 RPC</p>
           <h1 class="download-title">{{ title }}</h1>
         </div>
-        <span class="download-count">{{ linkCountLabel }}</span>
       </header>
 
       <form class="download-form" @submit.prevent="submit">
@@ -43,21 +42,6 @@
             </label>
           </div>
 
-          <div class="resource-panel" aria-label="Matched download links">
-            <header class="resource-panel__header">
-              <strong>{{ resourcePanelTitle }}</strong>
-              <span>These addresses will be submitted to aria2.</span>
-            </header>
-            <div class="resource-list">
-              <article v-for="resource in resources" :key="resource.id" class="resource-row">
-                <div class="resource-main">
-                  <strong>{{ resource.displayName }}</strong>
-                  <span>{{ resource.original }}</span>
-                </div>
-                <small>{{ resource.type }}</small>
-              </article>
-            </div>
-          </div>
         </div>
 
         <div class="download-form__footer">
@@ -83,7 +67,7 @@
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { usePluginAttachmentSession } from "./composables/usePluginAttachmentSession";
 
-const { payload, invokeAction } = usePluginAttachmentSession();
+const { payload, session, invokeAction } = usePluginAttachmentSession();
 
 const form = reactive({
   rpcProtocol: "http",
@@ -103,10 +87,18 @@ const resources = computed(() => Array.isArray(payload.value?.resources)
   : []);
 
 const title = computed(() => payload.value?.display?.headline || "Download task");
-const linkCountLabel = computed(() => `${resources.value.length} ${resources.value.length === 1 ? "link" : "links"}`);
-const resourcePanelTitle = computed(() => resources.value.length === 1 ? "Matched Link" : "Matched Links");
 const rpcSummary = computed(() => `${form.rpcProtocol}://${form.rpcHost}:${form.rpcPort}`);
 const directorySummary = computed(() => form.dir ? `Save to ${form.dir}` : "Use aria2 default directory");
+const themeStyle = computed(() => {
+  const accent = normalizeHexColor(session.accentHex) || "#2563eb";
+  return {
+    "--accent": accent,
+    "--accent-soft": hexToRgba(accent, 0.12),
+    "--accent-border": hexToRgba(accent, 0.24),
+    "--accent-strong": shadeHex(accent, -18),
+    "--accent-shadow": hexToRgba(accent, 0.24)
+  };
+});
 
 watch(
   () => payload.value?.defaults,
@@ -199,6 +191,36 @@ function clearSubmitTimeout() {
   }
 }
 
+function normalizeHexColor(value) {
+  const text = String(value || "").trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(text)) {
+    return text;
+  }
+  if (/^#[0-9a-fA-F]{3}$/.test(text)) {
+    return `#${text[1]}${text[1]}${text[2]}${text[2]}${text[3]}${text[3]}`;
+  }
+  return "";
+}
+
+function hexToRgba(hex, alpha) {
+  const normalized = normalizeHexColor(hex) || "#2563eb";
+  const value = Number.parseInt(normalized.slice(1), 16);
+  const red = (value >> 16) & 255;
+  const green = (value >> 8) & 255;
+  const blue = value & 255;
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+}
+
+function shadeHex(hex, percent) {
+  const normalized = normalizeHexColor(hex) || "#2563eb";
+  const value = Number.parseInt(normalized.slice(1), 16);
+  const amount = Math.round(2.55 * percent);
+  const red = Math.max(0, Math.min(255, ((value >> 16) & 255) + amount));
+  const green = Math.max(0, Math.min(255, ((value >> 8) & 255) + amount));
+  const blue = Math.max(0, Math.min(255, (value & 255) + amount));
+  return `#${((1 << 24) + (red << 16) + (green << 8) + blue).toString(16).slice(1)}`;
+}
+
 onMounted(() => {
   window.addEventListener("pasty-plugin-operation-result", handleOperationResult);
 });
@@ -212,8 +234,8 @@ onUnmounted(() => {
 <style scoped>
 .download-shell {
   height: 100%;
-  background: #f8fafc;
-  color: #111827;
+  background: transparent;
+  color: color-mix(in srgb, var(--accent) 18%, #111827);
 }
 
 .download-panel {
@@ -238,7 +260,7 @@ onUnmounted(() => {
 
 .download-eyebrow {
   margin: 0;
-  color: #64748b;
+  color: color-mix(in srgb, var(--accent) 42%, #64748b);
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
@@ -251,22 +273,7 @@ onUnmounted(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.download-count {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 44px;
-  height: 30px;
-  border-radius: 8px;
-  padding: 0 9px;
-  background: #dbeafe;
-  color: #1d4ed8;
-  font-size: 12px;
-  font-weight: 700;
-  white-space: nowrap;
+  color: color-mix(in srgb, var(--accent) 16%, #0f172a);
 }
 
 .download-form {
@@ -299,9 +306,9 @@ onUnmounted(() => {
   align-items: center;
   gap: 10px;
   padding: 9px 10px;
-  border: 1px solid #dbeafe;
+  border: 1px solid var(--accent-border);
   border-radius: 8px;
-  background: #eff6ff;
+  background: var(--accent-soft);
 }
 
 .config-summary__text {
@@ -318,22 +325,22 @@ onUnmounted(() => {
 }
 
 .config-summary__text strong {
-  color: #1e3a8a;
+  color: var(--accent-strong);
   font-size: 12px;
 }
 
 .config-summary__text span {
-  color: #475569;
+  color: color-mix(in srgb, var(--accent) 20%, #475569);
   font-size: 11px;
 }
 
 .config-summary__button {
   height: 28px;
-  border: 1px solid #bfdbfe;
+  border: 1px solid var(--accent-border);
   border-radius: 7px;
   padding: 0 10px;
-  background: #ffffff;
-  color: #1d4ed8;
+  background: color-mix(in srgb, var(--accent) 4%, #ffffff);
+  color: var(--accent-strong);
   font-size: 12px;
   font-weight: 700;
 }
@@ -360,7 +367,7 @@ onUnmounted(() => {
 }
 
 .field span {
-  color: #475569;
+  color: color-mix(in srgb, var(--accent) 18%, #475569);
   font-size: 11px;
   font-weight: 700;
 }
@@ -368,96 +375,24 @@ onUnmounted(() => {
 .field input {
   min-width: 0;
   height: 30px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid color-mix(in srgb, var(--accent) 16%, #cbd5e1);
   border-radius: 7px;
   padding: 0 9px;
-  background: #ffffff;
-  color: #0f172a;
+  background: color-mix(in srgb, var(--accent) 3%, #ffffff);
+  color: color-mix(in srgb, var(--accent) 16%, #0f172a);
   font: inherit;
   font-size: 12px;
 }
 
 .field input:focus {
-  outline: 2px solid rgba(37, 99, 235, 0.22);
-  border-color: #2563eb;
-}
-
-.resource-panel {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: 6px;
-  flex: 1 1 auto;
-  min-height: 62px;
-  padding: 8px 9px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  background: #ffffff;
-}
-
-.resource-panel__header {
-  display: grid;
-  gap: 2px;
-}
-
-.resource-panel__header strong {
-  color: #0f172a;
-  font-size: 12px;
-}
-
-.resource-panel__header span {
-  color: #64748b;
-  font-size: 11px;
-}
-
-.resource-list {
-  display: grid;
-  align-content: start;
-  gap: 6px;
-  min-height: 0;
-  overflow: auto;
-}
-
-.resource-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 0 0;
-  border-top: 1px solid #f1f5f9;
-}
-
-.resource-row:first-child {
-  border-top: 0;
-  padding-top: 2px;
-}
-
-.resource-main {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
-
-.resource-main strong,
-.resource-main span {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.resource-main strong {
-  font-size: 12px;
-}
-
-.resource-main span,
-.resource-row small {
-  color: #64748b;
-  font-size: 11px;
+  outline: 2px solid var(--accent-border);
+  border-color: var(--accent);
 }
 
 .status-message {
   margin: 0;
   min-height: 16px;
-  color: #2563eb;
+  color: var(--accent-strong);
   font-size: 11px;
   line-height: 1.35;
 }
@@ -470,23 +405,27 @@ onUnmounted(() => {
   height: 42px;
   border: 0;
   border-radius: 10px;
-  background: linear-gradient(180deg, #16a34a, #15803d);
+  background: linear-gradient(180deg, var(--accent), var(--accent-strong));
   color: #ffffff;
   font-size: 14px;
   font-weight: 800;
   letter-spacing: 0;
-  box-shadow: 0 10px 20px rgba(21, 128, 61, 0.22);
+  box-shadow: 0 10px 20px var(--accent-shadow);
   cursor: pointer;
 }
 
 .submit-button:hover:not(:disabled) {
-  background: linear-gradient(180deg, #22c55e, #15803d);
-  box-shadow: 0 12px 24px rgba(21, 128, 61, 0.3);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent) 84%, #ffffff),
+    var(--accent-strong)
+  );
+  box-shadow: 0 12px 24px var(--accent-shadow);
 }
 
 .submit-button:active:not(:disabled) {
   transform: translateY(1px);
-  box-shadow: 0 6px 14px rgba(21, 128, 61, 0.24);
+  box-shadow: 0 6px 14px var(--accent-shadow);
 }
 
 .submit-button:disabled {
@@ -509,7 +448,7 @@ onUnmounted(() => {
 
 .empty-state__body {
   margin: 8px 0 0;
-  color: #64748b;
+  color: color-mix(in srgb, var(--accent) 18%, #64748b);
   font-size: 13px;
   line-height: 1.45;
 }
