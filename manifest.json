@@ -3,7 +3,7 @@
   "plugin": {
     "id": "plugin.pasty.aria2",
     "title": "Aria2 Downloader",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
   "install": {
     "runtime": "node",
@@ -27,8 +27,13 @@
     {
       "id": "link-detector",
       "title": "Aria2 Link Detector",
-      "supportedInputKinds": ["text", "path_reference"],
-      "attachmentTypes": ["plugin.pasty.aria2.download"]
+      "supportedInputKinds": [
+        "text",
+        "path_reference"
+      ],
+      "attachmentTypes": [
+        "plugin.pasty.aria2.download"
+      ]
     }
   ],
   "actions": []
