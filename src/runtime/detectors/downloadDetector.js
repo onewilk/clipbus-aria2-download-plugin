@@ -2,11 +2,14 @@ const {
   ATTACHMENT_TYPE,
   buildDownloadAttachmentKey,
   buildDownloadSearchProjection,
-  createDownloadAttachmentPayload
+  createDownloadAttachmentPayload,
+  normalizeRpcConfig,
+  readExternalRpcConfig
 } = require("../shared/downloadAttachmentPayload");
 
-async function detectDownloadAttachment(input) {
-  const payload = createDownloadAttachmentPayload(input);
+async function detectDownloadAttachment(input, ctx) {
+  const externalConfig = await readExternalRpcConfig(ctx);
+  const payload = createDownloadAttachmentPayload(input, normalizeRpcConfig(externalConfig));
   if (!payload) {
     return [];
   }
@@ -24,9 +27,9 @@ async function detectDownloadAttachment(input) {
 
 function createDownloadDetector() {
   return {
-    async detect(input) {
+    async detect(input, ctx) {
       return {
-        artifacts: await detectDownloadAttachment(input)
+        artifacts: await detectDownloadAttachment(input, ctx)
       };
     }
   };

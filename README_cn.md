@@ -41,6 +41,18 @@ Aria2 Downloader 是一个 Pasty 插件，用于从剪贴板条目中识别可�
 
 提交前可以在界面中修改这些值。
 
+## External Settings
+
+Pasty 可以向插件 runtime 提供本机只读 external settings。本插件会读取以下 key：
+
+- `plugin.pasty.aria2.rpcProtocol`：`http` 或 `https`
+- `plugin.pasty.aria2.rpcHost`：aria2 RPC 地址
+- `plugin.pasty.aria2.rpcPort`：aria2 RPC 端口
+- `plugin.pasty.aria2.rpcSecret`：aria2 RPC 密钥
+- `plugin.pasty.aria2.dir`：默认下载目录
+
+这些配置由 Pasty 本机设置维护，插件只读取，不写入。界面中手动填写的值会优先生效；external settings 会作为默认值和 runtime 兜底配置。
+
 ## aria2 启动方式
 
 需要启动已开启 JSON-RPC 的 aria2，并使用匹配的密钥。例如：
@@ -82,7 +94,7 @@ npm run dev
 本地开发时，将插件根目录添加到 Pasty Developer Plugins：
 
 ```text
-/path/to/aria2-plugin
+path/to/aira2-plugin
 ```
 
 Pasty 会加载 `manifest.json` 中声明的构建产物：

@@ -2,7 +2,9 @@ const fs = require("node:fs/promises");
 const { rendererResult } = require("../sdk/results/rendererResult");
 const {
   DEFAULT_RPC_CONFIG,
-  decodeDownloadAttachmentPayload
+  decodeDownloadAttachmentPayload,
+  normalizeRpcConfig: normalizeStoredRpcConfig,
+  readExternalRpcConfig
 } = require("../shared/downloadAttachmentPayload");
 
 function resolveAttachment(input) {
@@ -34,7 +36,8 @@ async function invokeOperation(input, ctx) {
 
   if (input.buttonID === "submit-download") {
     try {
-      const gids = await submitDownloads(payload.resources, input?.params ?? {});
+      const externalConfig = await readExternalRpcConfig(ctx);
+      const gids = await submitDownloads(payload.resources, input?.params ?? {}, externalConfig);
       return rendererResult.success({
         userMessage: `Submitted ${gids.length} download${gids.length === 1 ? "" : "s"}`
       });
@@ -46,21 +49,27 @@ async function invokeOperation(input, ctx) {
   return rendererResult.success();
 }
 
-function normalizeRpcConfig(params) {
-  const host = String(params.rpcHost || params.host || DEFAULT_RPC_CONFIG.rpcHost).trim() || DEFAULT_RPC_CONFIG.rpcHost;
-  const port = Number(params.rpcPort || params.port || DEFAULT_RPC_CONFIG.rpcPort);
-  const secret = String(params.rpcSecret || params.secret || DEFAULT_RPC_CONFIG.rpcSecret);
-  const protocol = String(params.rpcProtocol || params.protocol || "http").toLowerCase() === "https"
-    ? "https"
-    : "http";
+function mergeRpcConfig(params = {}, externalConfig = {}) {
+  const normalizedExternal = normalizeStoredRpcConfig(externalConfig);
+  return normalizeStoredRpcConfig({
+    rpcProtocol: params.rpcProtocol || params.protocol || normalizedExternal.rpcProtocol,
+    rpcHost: params.rpcHost || params.host || normalizedExternal.rpcHost,
+    rpcPort: params.rpcPort || params.port || normalizedExternal.rpcPort,
+    rpcSecret: params.rpcSecret ?? params.secret ?? normalizedExternal.rpcSecret,
+    dir: params.dir || normalizedExternal.dir
+  });
+}
+
+function buildRpcEndpoint(config) {
+  const port = Number(config.rpcPort);
 
   if (!Number.isInteger(port) || port <= 0 || port > 65535) {
     throw new Error("Invalid aria2 RPC port");
   }
 
   return {
-    endpoint: `${protocol}://${host}:${port}/jsonrpc`,
-    secret
+    endpoint: `${config.rpcProtocol}://${config.rpcHost}:${port}/jsonrpc`,
+    secret: config.rpcSecret
   };
 }
 
@@ -111,9 +120,10 @@ async function submitResource(config, resource, options) {
   return callAria2(config, "aria2.addUri", [[resource.uri], options]);
 }
 
-async function submitDownloads(resources, params) {
-  const config = normalizeRpcConfig(params);
-  const dir = String(params.dir || DEFAULT_RPC_CONFIG.dir).trim();
+async function submitDownloads(resources, params, externalConfig = {}) {
+  const mergedConfig = mergeRpcConfig(params, externalConfig);
+  const config = buildRpcEndpoint(mergedConfig);
+  const dir = String(mergedConfig.dir || DEFAULT_RPC_CONFIG.dir).trim();
   const options = {};
   if (dir) {
     options.dir = dir;
@@ -145,6 +155,7 @@ function createDownloadRenderer() {
 module.exports = {
   createDownloadRenderer,
   invokeOperation,
+  mergeRpcConfig,
   resolveAttachment,
   submitDownloads
 };
