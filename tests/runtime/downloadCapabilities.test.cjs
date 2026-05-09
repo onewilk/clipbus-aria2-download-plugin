@@ -168,6 +168,27 @@ test("download detector matches GitHub release asset URLs", async () => {
   assert.equal(payload.resources[0].displayName, "MotrixNext_3.8.7_aarch64.dmg");
 });
 
+test("download detector uses attname query parameter as display name", async () => {
+  const { detectDownloadAttachment } = require(path.resolve(
+    projectRoot,
+    "src/runtime/detectors/downloadDetector.js"
+  ));
+
+  const url = "https://file.example.com/upload_files/2026/05/09/raw.bin?attname=release.apk";
+  const artifacts = await detectDownloadAttachment({
+    content: {
+      kind: "text",
+      payload: {
+        text: url
+      }
+    }
+  });
+
+  const payload = JSON.parse(artifacts[0].payloadJson);
+  assert.equal(payload.resources[0].displayName, "release.apk");
+  assert.equal(payload.display.headline, "release.apk");
+});
+
 
 test("download detector emits local torrent and metalink files from path references", async () => {
   const { detectDownloadAttachment } = require(path.resolve(
