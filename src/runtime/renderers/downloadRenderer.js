@@ -7,6 +7,8 @@ const {
   readExternalRpcConfig
 } = require("../shared/downloadAttachmentPayload");
 
+const HELP_URL = "https://github.com/onewilk/pasty-aria2-download-plugin";
+
 function resolveAttachment(input) {
   const payload = decodeDownloadAttachmentPayload(input?.attachment?.payloadJson);
   if (!payload) {
@@ -25,6 +27,15 @@ function resolveAttachment(input) {
 }
 
 async function invokeOperation(input, ctx) {
+  if (input.buttonID === "open-help") {
+    try {
+      await ctx?.host?.navigation?.openUrl?.(HELP_URL);
+      return rendererResult.success();
+    } catch (error) {
+      return rendererResult.failure(formatSubmitError(error));
+    }
+  }
+
   const payload = decodeDownloadAttachmentPayload(input?.attachment?.payloadJson);
   if (!payload) {
     return rendererResult.failure("Invalid download payload");
@@ -153,5 +164,6 @@ module.exports = {
   invokeOperation,
   mergeRpcConfig,
   resolveAttachment,
-  submitDownloads
+  submitDownloads,
+  HELP_URL
 };

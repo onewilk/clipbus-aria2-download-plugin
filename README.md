@@ -1,5 +1,7 @@
 # Aria2 Downloader
 
+[中文](README_cn.md) | English
+
 Aria2 Downloader is a Pasty plugin that detects downloadable links from clipboard items and submits them to an aria2 JSON-RPC server.
 
 ## Features
