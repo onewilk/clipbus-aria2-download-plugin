@@ -10,55 +10,59 @@
       </header>
 
       <form class="download-form" @submit.prevent="submit">
-        <div v-if="!showConfig" class="config-summary">
-          <div class="config-summary__text">
-            <strong>{{ rpcSummary }}</strong>
-            <span>{{ directorySummary }}</span>
+        <div class="download-form__scroll">
+          <div v-if="!showConfig" class="config-summary">
+            <div class="config-summary__text">
+              <strong>{{ rpcSummary }}</strong>
+              <span>{{ directorySummary }}</span>
+            </div>
+            <button class="config-summary__button" type="button" @click="showConfig = true">
+              Edit
+            </button>
           </div>
-          <button class="config-summary__button" type="button" @click="showConfig = true">
-            Edit
+
+          <div v-else class="config-fields">
+            <div class="form-grid">
+              <label class="field">
+                <span>Address</span>
+                <input v-model.trim="form.rpcHost" autocomplete="off" spellcheck="false" />
+              </label>
+              <label class="field field--port">
+                <span>Port</span>
+                <input v-model.number="form.rpcPort" type="number" min="1" max="65535" />
+              </label>
+              <label class="field field--secret">
+                <span>RPC Secret</span>
+                <input v-model="form.rpcSecret" type="password" autocomplete="off" />
+              </label>
+            </div>
+
+            <label class="field">
+              <span>Download Directory</span>
+              <input v-model.trim="form.dir" autocomplete="off" spellcheck="false" placeholder="Optional" />
+            </label>
+          </div>
+
+          <div class="resource-list" aria-label="Matched download links">
+            <article v-for="resource in resources" :key="resource.id" class="resource-row">
+              <div class="resource-main">
+                <strong>{{ resource.displayName }}</strong>
+                <span>{{ resource.original }}</span>
+              </div>
+              <small>{{ resource.type }}</small>
+            </article>
+          </div>
+        </div>
+
+        <div class="download-form__footer">
+          <p v-if="message" class="status-message" :class="{ 'status-message--error': hasError }">
+            {{ message }}
+          </p>
+
+          <button class="submit-button" type="submit" :disabled="isSubmitting">
+            {{ isSubmitting ? "Submitting..." : "Submit to aria2" }}
           </button>
         </div>
-
-        <div v-else class="config-fields">
-          <div class="form-grid">
-            <label class="field">
-              <span>Address</span>
-              <input v-model.trim="form.rpcHost" autocomplete="off" spellcheck="false" />
-            </label>
-            <label class="field field--port">
-              <span>Port</span>
-              <input v-model.number="form.rpcPort" type="number" min="1" max="65535" />
-            </label>
-            <label class="field field--secret">
-              <span>RPC Secret</span>
-              <input v-model="form.rpcSecret" type="password" autocomplete="off" />
-            </label>
-          </div>
-
-          <label class="field">
-            <span>Download Directory</span>
-            <input v-model.trim="form.dir" autocomplete="off" spellcheck="false" placeholder="Optional" />
-          </label>
-        </div>
-
-        <div class="resource-list" aria-label="Matched download links">
-          <article v-for="resource in resources" :key="resource.id" class="resource-row">
-            <div class="resource-main">
-              <strong>{{ resource.displayName }}</strong>
-              <span>{{ resource.original }}</span>
-            </div>
-            <small>{{ resource.type }}</small>
-          </article>
-        </div>
-
-        <p v-if="message" class="status-message" :class="{ 'status-message--error': hasError }">
-          {{ message }}
-        </p>
-
-        <button class="submit-button" type="submit" :disabled="isSubmitting">
-          {{ isSubmitting ? "Submitting..." : "Submit to aria2" }}
-        </button>
       </form>
     </section>
 
@@ -234,7 +238,24 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  flex: 1 1 auto;
   min-height: 0;
+}
+
+.download-form__scroll {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.download-form__footer {
+  display: grid;
+  flex: 0 0 auto;
+  gap: 7px;
 }
 
 .config-summary {
@@ -329,9 +350,8 @@ onUnmounted(() => {
 .resource-list {
   display: grid;
   gap: 6px;
-  min-height: 76px;
-  max-height: 118px;
-  overflow: auto;
+  flex: 1 1 auto;
+  min-height: 62px;
 }
 
 .resource-row {
