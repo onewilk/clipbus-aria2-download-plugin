@@ -1,5 +1,7 @@
 # Aria2 Downloader
 
+中文 | [English](README.md)
+
 Aria2 Downloader 是一个 Pasty 插件，用于从剪贴板条目中识别可下载链接，并通过 aria2 JSON-RPC 提交下载任务。
 
 ## 功能

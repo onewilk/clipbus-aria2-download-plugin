@@ -6,6 +6,9 @@
           <p class="download-eyebrow">aria2 RPC</p>
           <h1 class="download-title">{{ title }}</h1>
         </div>
+        <button class="help-button" type="button" title="Open help" aria-label="Open help" @click="openHelp">
+          ?
+        </button>
       </header>
 
       <form class="download-form" @submit.prevent="submit">
@@ -167,6 +170,10 @@ function submit() {
   });
 }
 
+function openHelp() {
+  invokeAction("open-help", {});
+}
+
 function handleOperationResult(event) {
   const detail = event.detail ?? {};
   if (detail.actionID && detail.actionID !== "submit-download") {
@@ -255,7 +262,27 @@ onUnmounted(() => {
 }
 
 .download-heading {
+  flex: 1 1 auto;
   min-width: 0;
+}
+
+.help-button {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--accent-border);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.help-button:hover {
+  background: color-mix(in srgb, var(--accent) 18%, #ffffff);
 }
 
 .download-eyebrow {

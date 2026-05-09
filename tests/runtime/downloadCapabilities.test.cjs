@@ -264,6 +264,33 @@ test("download renderer resolves without host action buttons", () => {
   assert.deepEqual(resolved.buttons, []);
 });
 
+test("download renderer opens help URL", async () => {
+  const { HELP_URL, invokeOperation } = require(path.resolve(
+    projectRoot,
+    "src/runtime/renderers/downloadRenderer.js"
+  ));
+  let openedUrl = "";
+
+  const result = await invokeOperation(
+    {
+      buttonID: "open-help"
+    },
+    {
+      host: {
+        navigation: {
+          async openUrl(url) {
+            openedUrl = url;
+            return true;
+          }
+        }
+      }
+    }
+  );
+
+  assert.equal(result.success, true);
+  assert.equal(openedUrl, HELP_URL);
+});
+
 test("download renderer submits aria2 addUri through JSON-RPC", async () => {
   const { submitDownloads } = require(path.resolve(
     projectRoot,
