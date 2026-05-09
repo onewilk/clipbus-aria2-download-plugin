@@ -13,18 +13,14 @@ function resolveAttachment(input) {
     return {
       displayName: "Aria2 Download",
       tintHex: "#6B7280",
-      buttons: [
-        { id: "submit-download", title: "Submit Download", isEnabled: false }
-      ]
+      buttons: []
     };
   }
 
   return {
     displayName: "Aria2 Download",
     tintHex: "#2563EB",
-    buttons: [
-      { id: "submit-download", title: "Submit Download", isEnabled: true }
-    ]
+    buttons: []
   };
 }
 

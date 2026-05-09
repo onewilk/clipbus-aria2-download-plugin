@@ -30,9 +30,7 @@ function createDownloadScenario({ id, label, resources, text }) {
           }
         })
       },
-      buttons: [
-        { id: "submit-download", title: "Submit Download", isEnabled: true }
-      ]
+      buttons: []
     }
   };
 }
