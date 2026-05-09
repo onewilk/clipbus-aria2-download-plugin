@@ -41,6 +41,18 @@ The UI opens with these defaults:
 
 The values can be edited before submitting.
 
+## External Settings
+
+Pasty can provide local, read-only external settings to plugin runtime code. This plugin reads the following keys when available:
+
+- `plugin.pasty.aria2.rpcProtocol`: `http` or `https`
+- `plugin.pasty.aria2.rpcHost`: aria2 RPC host
+- `plugin.pasty.aria2.rpcPort`: aria2 RPC port
+- `plugin.pasty.aria2.rpcSecret`: aria2 RPC secret
+- `plugin.pasty.aria2.dir`: default download directory
+
+These settings are local to Pasty and are not written by the plugin. Values entered in the plugin UI take precedence for the current submit action; external settings are used as defaults and runtime fallback values.
+
 ## aria2 Setup
 
 Start aria2 with JSON-RPC enabled and a matching secret. Example:
@@ -82,7 +94,7 @@ npm run dev
 For local development, add this plugin root directory to Pasty Developer Plugins:
 
 ```text
-/Users/huluwa/WorkSpace/Pasty Plugins/aira2-plugin
+path/to/aira2-plugin
 ```
 
 Pasty loads the built files declared in `manifest.json`:

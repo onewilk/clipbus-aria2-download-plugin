@@ -65,6 +65,7 @@ test("download detector emits artifact for supported text links", async () => {
   const payload = JSON.parse(artifacts[0].payloadJson);
   assert.equal(payload.kind, "aria2_download_task");
   assert.deepEqual(payload.defaults, {
+    rpcProtocol: "http",
     rpcHost: "127.0.0.1",
     rpcPort: 16800,
     rpcSecret: "diOzvyOnub7g5yjo",
@@ -77,6 +78,49 @@ test("download detector emits artifact for supported text links", async () => {
     payload.resources[2].uri,
     "magnet:?xt=urn:btih:d8988e034cb5de79d319242e3365bf30a7741a6e"
   );
+});
+
+test("download detector reads aria2 defaults from external settings", async () => {
+  const { detectDownloadAttachment } = require(path.resolve(
+    projectRoot,
+    "src/runtime/detectors/downloadDetector.js"
+  ));
+
+  const artifacts = await detectDownloadAttachment(
+    {
+      content: {
+        kind: "text",
+        payload: {
+          text: "https://example.com/file.zip"
+        }
+      }
+    },
+    {
+      host: {
+        settings: {
+          async getAll() {
+            return {
+              "plugin.pasty.aria2.rpcProtocol": "https",
+              "plugin.pasty.aria2.rpcHost": "aria2.local",
+              "plugin.pasty.aria2.rpcPort": 9443,
+              "plugin.pasty.aria2.rpcSecret": "configured-secret",
+              "plugin.pasty.aria2.dir": "/downloads",
+              "plugin.other.rpcSecret": "must-not-be-read"
+            };
+          }
+        }
+      }
+    }
+  );
+
+  const payload = JSON.parse(artifacts[0].payloadJson);
+  assert.deepEqual(payload.defaults, {
+    rpcProtocol: "https",
+    rpcHost: "aria2.local",
+    rpcPort: 9443,
+    rpcSecret: "configured-secret",
+    dir: "/downloads"
+  });
 });
 
 test("download detector decodes thunder links", async () => {
@@ -279,6 +323,53 @@ test("download renderer uses default aria2 RPC config and Downloads directory", 
       "token:diOzvyOnub7g5yjo",
       ["https://example.com/file.zip"],
       { dir: path.join(os.homedir(), "Downloads") }
+    ]);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test("download renderer uses external settings as submit fallback", async () => {
+  const { submitDownloads } = require(path.resolve(
+    projectRoot,
+    "src/runtime/renderers/downloadRenderer.js"
+  ));
+  const requests = [];
+  const originalFetch = global.fetch;
+  global.fetch = async (url, options) => {
+    requests.push({ url, body: JSON.parse(options.body) });
+    return {
+      ok: true,
+      async json() {
+        return { result: "gid-settings" };
+      }
+    };
+  };
+
+  try {
+    const gids = await submitDownloads(
+      [
+        {
+          type: "http",
+          uri: "https://example.com/file.zip"
+        }
+      ],
+      {},
+      {
+        rpcProtocol: "https",
+        rpcHost: "aria2.local",
+        rpcPort: 9443,
+        rpcSecret: "configured-secret",
+        dir: "/downloads"
+      }
+    );
+
+    assert.deepEqual(gids, ["gid-settings"]);
+    assert.equal(requests[0].url, "https://aria2.local:9443/jsonrpc");
+    assert.deepEqual(requests[0].body.params, [
+      "token:configured-secret",
+      ["https://example.com/file.zip"],
+      { dir: "/downloads" }
     ]);
   } finally {
     global.fetch = originalFetch;

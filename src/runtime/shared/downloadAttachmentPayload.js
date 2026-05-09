@@ -2,7 +2,9 @@ const path = require("node:path");
 const os = require("node:os");
 
 const ATTACHMENT_TYPE = "plugin.pasty.aria2.download";
+const SETTINGS_PREFIX = "plugin.pasty.aria2.";
 const DEFAULT_RPC_CONFIG = {
+  rpcProtocol: "http",
   rpcHost: "127.0.0.1",
   rpcPort: 16800,
   rpcSecret: "diOzvyOnub7g5yjo",
@@ -22,6 +24,52 @@ const URI_PREFIXES = [
   "http+ftp://"
 ];
 const LOCAL_FILE_EXTENSIONS = [".torrent", ".metalink", ".meta4"];
+
+function normalizeRpcConfig(config = {}) {
+  const rpcProtocol = String(config.rpcProtocol || DEFAULT_RPC_CONFIG.rpcProtocol).toLowerCase() === "https"
+    ? "https"
+    : "http";
+  const rpcHost = String(config.rpcHost || DEFAULT_RPC_CONFIG.rpcHost).trim() || DEFAULT_RPC_CONFIG.rpcHost;
+  const rpcPort = Number(config.rpcPort) || DEFAULT_RPC_CONFIG.rpcPort;
+  const rpcSecret = String(config.rpcSecret ?? DEFAULT_RPC_CONFIG.rpcSecret);
+  const dir = String(config.dir || DEFAULT_RPC_CONFIG.dir).trim() || DEFAULT_RPC_CONFIG.dir;
+
+  return {
+    rpcProtocol,
+    rpcHost,
+    rpcPort,
+    rpcSecret,
+    dir
+  };
+}
+
+function settingValue(settings, key) {
+  return settings?.[`${SETTINGS_PREFIX}${key}`];
+}
+
+async function readExternalRpcConfig(ctx) {
+  const getAll = ctx?.host?.settings?.getAll;
+  if (typeof getAll !== "function") {
+    return {};
+  }
+
+  try {
+    const settings = await getAll();
+    if (!settings || typeof settings !== "object") {
+      return {};
+    }
+
+    return {
+      rpcProtocol: settingValue(settings, "rpcProtocol"),
+      rpcHost: settingValue(settings, "rpcHost"),
+      rpcPort: settingValue(settings, "rpcPort"),
+      rpcSecret: settingValue(settings, "rpcSecret"),
+      dir: settingValue(settings, "dir")
+    };
+  } catch {
+    return {};
+  }
+}
 
 function decodeThunderLink(value = "") {
   if (!value.toLowerCase().startsWith("thunder://")) {
@@ -173,7 +221,7 @@ function buildDisplayName(value, type) {
   }
 }
 
-function createDownloadAttachmentPayload(input) {
+function createDownloadAttachmentPayload(input, defaults = DEFAULT_RPC_CONFIG) {
   const contentKind = input?.content?.kind;
   const contentPayload = input?.content?.payload ?? {};
   let candidates = [];
@@ -195,7 +243,7 @@ function createDownloadAttachmentPayload(input) {
     kind: "aria2_download_task",
     version: 1,
     sourceKind: contentKind,
-    defaults: DEFAULT_RPC_CONFIG,
+    defaults: normalizeRpcConfig(defaults),
     resources,
     display: {
       headline: resources.length === 1 ? resources[0].displayName : `${resources.length} download links`,
@@ -232,12 +280,7 @@ function decodeDownloadAttachmentPayload(payloadJson) {
       kind: "aria2_download_task",
       version: Number(parsed.version) || 1,
       sourceKind: String(parsed.sourceKind || ""),
-      defaults: {
-        rpcHost: String(parsed.defaults?.rpcHost || DEFAULT_RPC_CONFIG.rpcHost),
-        rpcPort: Number(parsed.defaults?.rpcPort) || DEFAULT_RPC_CONFIG.rpcPort,
-        rpcSecret: String(parsed.defaults?.rpcSecret || DEFAULT_RPC_CONFIG.rpcSecret),
-        dir: String(parsed.defaults?.dir || DEFAULT_RPC_CONFIG.dir)
-      },
+      defaults: normalizeRpcConfig(parsed.defaults),
       resources,
       display: {
         headline: String(parsed.display?.headline || `${resources.length} download links`),
@@ -280,10 +323,13 @@ module.exports = {
   ATTACHMENT_TYPE,
   BARE_INFO_HASH_RE,
   DEFAULT_RPC_CONFIG,
+  SETTINGS_PREFIX,
   buildDownloadAttachmentKey,
   buildDownloadSearchProjection,
   createDownloadAttachmentPayload,
   decodeDownloadAttachmentPayload,
   decodeThunderLink,
-  normalizeCandidates
+  normalizeCandidates,
+  normalizeRpcConfig,
+  readExternalRpcConfig
 };

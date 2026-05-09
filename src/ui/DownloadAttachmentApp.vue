@@ -64,6 +64,7 @@ import { usePluginAttachmentSession } from "./composables/usePluginAttachmentSes
 const { payload, invokeAction } = usePluginAttachmentSession();
 
 const form = reactive({
+  rpcProtocol: "http",
   rpcHost: "127.0.0.1",
   rpcPort: 16800,
   rpcSecret: "diOzvyOnub7g5yjo",
@@ -85,6 +86,7 @@ watch(
     if (!defaults) {
       return;
     }
+    form.rpcProtocol = defaults.rpcProtocol || form.rpcProtocol;
     form.rpcHost = defaults.rpcHost || form.rpcHost;
     form.rpcPort = Number(defaults.rpcPort) || form.rpcPort;
     form.rpcSecret = defaults.rpcSecret || form.rpcSecret;
@@ -118,6 +120,7 @@ function submit() {
   hasError.value = false;
   message.value = "Submitted. If it fails, check the aria2 RPC configuration and retry.";
   invokeAction("submit-download", {
+    rpcProtocol: form.rpcProtocol,
     rpcHost: form.rpcHost,
     rpcPort: Number(form.rpcPort),
     rpcSecret: form.rpcSecret,
