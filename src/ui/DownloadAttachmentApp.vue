@@ -1,61 +1,56 @@
 <template>
-  <main class="download-shell" :style="themeStyle">
+  <main class="download-shell">
     <section v-if="payload" class="download-panel">
-      <header class="download-header">
-        <div class="download-heading">
-          <p class="download-eyebrow">aria2 RPC</p>
-          <h1 class="download-title">{{ title }}</h1>
-        </div>
-        <button class="help-button" type="button" title="Open help" aria-label="Open help" @click="openHelp">
-          ?
-        </button>
-      </header>
-
       <form class="download-form" @submit.prevent="submit">
         <div class="download-form__scroll">
-          <div v-if="!showConfig" class="config-summary">
-            <div class="config-summary__text">
+          <section v-if="isConfigReady" class="config-summary" aria-label="aria2 RPC settings">
+            <div class="config-summary__content">
+              <p class="download-eyebrow">aria2 RPC</p>
               <strong>{{ rpcSummary }}</strong>
               <span>{{ directorySummary }}</span>
+              <p class="config-help">Change settings in Pasty external settings.</p>
             </div>
-            <button class="config-summary__button" type="button" @click="showConfig = true">
-              Edit
-            </button>
-          </div>
-
-          <div v-else class="config-fields">
-            <div class="form-grid">
-              <label class="field">
-                <span>Address</span>
-                <input v-model.trim="form.rpcHost" autocomplete="off" spellcheck="false" />
-              </label>
-              <label class="field field--port">
-                <span>Port</span>
-                <input v-model.number="form.rpcPort" type="number" min="1" max="65535" />
-              </label>
-              <label class="field field--secret">
-                <span>RPC Secret</span>
-                <input v-model="form.rpcSecret" type="password" autocomplete="off" />
-              </label>
+            <div class="config-actions">
+              <button class="submit-button" type="submit" :disabled="isSubmitting || !isConfigReady">
+                {{ isSubmitting ? "Submitting..." : "Submit to aria2" }}
+              </button>
+              <button class="help-button" type="button" title="Open help" aria-label="Open help" @click="openHelp">
+                ?
+              </button>
             </div>
+          </section>
 
-            <label class="field">
-              <span>Download Directory</span>
-              <input v-model.trim="form.dir" autocomplete="off" spellcheck="false" placeholder="Optional" />
-            </label>
-          </div>
+          <section v-else class="config-missing" aria-label="aria2 RPC settings missing">
+            <div class="config-summary__content">
+              <p class="download-eyebrow">aria2 RPC</p>
+              <strong>Failed to read aria2 RPC settings.</strong>
+              <span>Please configure them in Pasty external settings first.</span>
+            </div>
+            <div class="config-actions">
+              <button class="submit-button" type="submit" :disabled="isSubmitting || !isConfigReady">
+                {{ isSubmitting ? "Submitting..." : "Submit to aria2" }}
+              </button>
+              <button class="help-button" type="button" title="Open help" aria-label="Open help" @click="openHelp">
+                ?
+              </button>
+            </div>
+          </section>
 
+          <section class="resource-list" aria-label="Detected download links">
+            <article
+              v-for="(resource, index) in resources"
+              :key="resource.id || `${resource.type}-${index}`"
+              class="resource-card"
+            >
+              <span class="resource-index">{{ index + 1 }}</span>
+              <div class="resource-main">
+                <strong>{{ resource.displayName || resource.uri }}</strong>
+                <span class="resource-uri">{{ resource.original || resource.uri }}</span>
+              </div>
+            </article>
+          </section>
         </div>
 
-        <div class="download-form__footer">
-          <p v-if="message" class="status-message" :class="{ 'status-message--error': hasError }">
-            {{ message }}
-          </p>
-
-          <button class="submit-button" type="submit" :disabled="isSubmitting">
-            {{ isSubmitting ? "Submitting..." : "Submit to aria2" }}
-          </button>
-        </div>
       </form>
     </section>
 
@@ -73,36 +68,24 @@ import { usePluginAttachmentSession } from "./composables/usePluginAttachmentSes
 const { payload, session, invokeAction } = usePluginAttachmentSession();
 
 const form = reactive({
-  rpcProtocol: "http",
-  rpcHost: "127.0.0.1",
-  rpcPort: 16800,
-  rpcSecret: "diOzvyOnub7g5yjo",
+  rpcProtocol: "",
+  rpcHost: "",
+  rpcPort: "",
+  rpcSecret: "",
   dir: ""
 });
 const isSubmitting = ref(false);
-const message = ref("");
+const hasRuntimeConfig = ref(false);
 const hasError = ref(false);
-const showConfig = ref(false);
 let submitTimeoutID = null;
 
 const resources = computed(() => Array.isArray(payload.value?.resources)
   ? payload.value.resources
   : []);
 
-const title = computed(() => payload.value?.display?.headline || "Download task");
 const rpcSummary = computed(() => `${form.rpcProtocol}://${form.rpcHost}:${form.rpcPort}`);
 const directorySummary = computed(() => form.dir ? `Save to ${form.dir}` : "Use aria2 default directory");
-const themeStyle = computed(() => {
-  const accent = normalizeHexColor(session.accentHex) || "#2563eb";
-  return {
-    "--accent": accent,
-    "--accent-soft": hexToRgba(accent, 0.1),
-    "--accent-border": hexToRgba(accent, 0.26),
-    "--accent-strong": shadeHex(accent, -18),
-    "--accent-shadow": hexToRgba(accent, 0.22)
-  };
-});
-
+const isConfigReady = computed(() => (hasRuntimeConfig.value || Boolean(payload.value?.defaults?.configReady)) && hasCompleteConfig());
 watch(
   () => payload.value?.defaults,
   (defaults) => {
@@ -114,7 +97,7 @@ watch(
     form.rpcPort = Number(defaults.rpcPort) || form.rpcPort;
     form.rpcSecret = defaults.rpcSecret || form.rpcSecret;
     form.dir = defaults.dir || form.dir;
-    showConfig.value = !hasCompleteConfig();
+    hasRuntimeConfig.value = Boolean(defaults.configReady) && hasCompleteConfig();
   },
   { immediate: true }
 );
@@ -127,6 +110,9 @@ function hasCompleteConfig() {
 }
 
 function validateForm() {
+  if (!isConfigReady.value) {
+    return "Failed to read aria2 RPC settings. Configure them in Pasty external settings first.";
+  }
   if (!form.rpcHost) {
     return "Enter the aria2 RPC address.";
   }
@@ -143,14 +129,11 @@ function submit() {
   const validationError = validateForm();
   if (validationError) {
     hasError.value = true;
-    message.value = validationError;
-    showConfig.value = true;
     return;
   }
 
   isSubmitting.value = true;
   hasError.value = false;
-  message.value = "Submitting to aria2...";
   clearSubmitTimeout();
   submitTimeoutID = window.setTimeout(() => {
     if (!isSubmitting.value) {
@@ -158,14 +141,11 @@ function submit() {
     }
     isSubmitting.value = false;
     hasError.value = true;
-    message.value = "No result was returned. Check the aria2 RPC configuration and Pasty operation result, then retry.";
-    showConfig.value = true;
   }, 8000);
   invokeAction("submit-download", {
     rpcProtocol: form.rpcProtocol,
     rpcHost: form.rpcHost,
     rpcPort: Number(form.rpcPort),
-    rpcSecret: form.rpcSecret,
     dir: form.dir
   });
 }
@@ -174,8 +154,17 @@ function openHelp() {
   invokeAction("open-help", {});
 }
 
+function readConfig() {
+  invokeAction("read-config", {});
+}
+
 function handleOperationResult(event) {
   const detail = event.detail ?? {};
+  if (detail.actionID === "read-config") {
+    applyRuntimeConfigResult(detail);
+    return;
+  }
+
   if (detail.actionID && detail.actionID !== "submit-download") {
     return;
   }
@@ -183,11 +172,34 @@ function handleOperationResult(event) {
   isSubmitting.value = false;
   clearSubmitTimeout();
   hasError.value = detail.success === false;
-  message.value = detail.userMessage || (detail.success === false
-    ? "Submit failed. Check the aria2 RPC configuration and retry."
-    : "Download submitted.");
-  if (hasError.value) {
-    showConfig.value = true;
+}
+
+function applyRuntimeConfigResult(detail) {
+  if (detail.success === false) {
+    hasRuntimeConfig.value = false;
+    return;
+  }
+
+  const config = parseConfigMessage(detail.userMessage);
+  if (!config) {
+    hasRuntimeConfig.value = false;
+    return;
+  }
+
+  form.rpcProtocol = config.rpcProtocol || form.rpcProtocol;
+  form.rpcHost = config.rpcHost || form.rpcHost;
+  form.rpcPort = Number(config.rpcPort) || form.rpcPort;
+  form.rpcSecret = config.rpcSecret ?? form.rpcSecret;
+  form.dir = config.dir || form.dir;
+  hasRuntimeConfig.value = Boolean(config.configReady) && hasCompleteConfig();
+}
+
+function parseConfigMessage(value) {
+  try {
+    const parsed = JSON.parse(String(value || "{}"));
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
   }
 }
 
@@ -198,38 +210,9 @@ function clearSubmitTimeout() {
   }
 }
 
-function normalizeHexColor(value) {
-  const text = String(value || "").trim();
-  if (/^#[0-9a-fA-F]{6}$/.test(text)) {
-    return text;
-  }
-  if (/^#[0-9a-fA-F]{3}$/.test(text)) {
-    return `#${text[1]}${text[1]}${text[2]}${text[2]}${text[3]}${text[3]}`;
-  }
-  return "";
-}
-
-function hexToRgba(hex, alpha) {
-  const normalized = normalizeHexColor(hex) || "#2563eb";
-  const value = Number.parseInt(normalized.slice(1), 16);
-  const red = (value >> 16) & 255;
-  const green = (value >> 8) & 255;
-  const blue = value & 255;
-  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
-}
-
-function shadeHex(hex, percent) {
-  const normalized = normalizeHexColor(hex) || "#2563eb";
-  const value = Number.parseInt(normalized.slice(1), 16);
-  const amount = Math.round(2.55 * percent);
-  const red = Math.max(0, Math.min(255, ((value >> 16) & 255) + amount));
-  const green = Math.max(0, Math.min(255, ((value >> 8) & 255) + amount));
-  const blue = Math.max(0, Math.min(255, (value & 255) + amount));
-  return `#${((1 << 24) + (red << 16) + (green << 8) + blue).toString(16).slice(1)}`;
-}
-
 onMounted(() => {
   window.addEventListener("pasty-plugin-operation-result", handleOperationResult);
+  window.requestAnimationFrame(readConfig);
 });
 
 onUnmounted(() => {
@@ -240,15 +223,43 @@ onUnmounted(() => {
 
 <style scoped>
 .download-shell {
+  --panel-bg-top:      rgba(248, 250, 252, 0.96);
+  --panel-bg-bottom:   rgba(241, 245, 249, 0.92);
+  --surface-bg:        rgba(248, 250, 252, 0.78);
+  --surface-bg-strong: rgba(255, 255, 255, 0.82);
+  --surface-border:    rgba(148, 163, 184, 0.22);
+  --shell-text:        #0f172a;
+  --shell-text-muted:  #64748b;
+  --shell-text-soft:   #475569;
+  --accent:            #e2e8f0;
+  --accent-strong:     #cbd5e1;
+  --button-text:       #334155;
+  --button-border:     rgba(203, 213, 225, 0.9);
+  --button-shadow:     rgba(15, 23, 42, 0.12);
+
   height: 100%;
+  overflow: hidden;
+  overscroll-behavior: contain;
   background: transparent;
-  color: inherit;
-  --text-primary: currentColor;
-  --text-muted: color-mix(in srgb, currentColor 68%, transparent);
-  --field-surface: color-mix(in srgb, currentColor 8%, transparent);
-  --field-surface-strong: color-mix(in srgb, currentColor 12%, transparent);
-  --button-surface: rgba(255, 255, 255, 0.92);
-  --button-text: #111827;
+  color: var(--shell-text);
+}
+
+@media (prefers-color-scheme: dark) {
+  .download-shell {
+    --panel-bg-top:      rgba(30, 41, 59, 0.96);
+    --panel-bg-bottom:   rgba(15, 23, 42, 0.92);
+    --surface-bg:        rgba(30, 41, 59, 0.54);
+    --surface-bg-strong: rgba(15, 23, 42, 0.72);
+    --surface-border:    rgba(45, 212, 191, 0.2);
+    --shell-text:        #e2e8f0;
+    --shell-text-muted:  #94a3b8;
+    --shell-text-soft:   #cbd5e1;
+    --accent:            rgba(30, 41, 59, 0.9);
+    --accent-strong:     rgba(15, 23, 42, 0.9);
+    --button-text:       #cbd5e1;
+    --button-border:     rgba(148, 163, 184, 0.26);
+    --button-shadow:     rgba(0, 0, 0, 0.3);
+  }
 }
 
 .download-panel {
@@ -257,19 +268,11 @@ onUnmounted(() => {
   gap: 8px;
   height: 100%;
   padding: 10px 12px 12px;
+  border-radius: 18px;
+  border: 1px solid var(--surface-border);
+  background: linear-gradient(180deg, var(--panel-bg-top), var(--panel-bg-bottom));
+  box-shadow: 0 10px 28px var(--button-shadow);
   overflow: hidden;
-}
-
-.download-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.download-heading {
-  flex: 1 1 auto;
-  min-width: 0;
 }
 
 .help-button {
@@ -278,23 +281,23 @@ onUnmounted(() => {
   place-items: center;
   width: 28px;
   height: 28px;
-  border: 1px solid var(--accent-border);
+  border: 1px solid var(--surface-border);
   border-radius: 999px;
-  background: var(--accent-soft);
-  color: var(--text-primary);
+  background: var(--surface-bg);
+  color: var(--shell-text);
   font-size: 14px;
   font-weight: 800;
   cursor: pointer;
 }
 
 .help-button:hover {
-  background: var(--accent);
-  color: #ffffff;
+  background: var(--surface-bg-strong);
+  color: var(--shell-text);
 }
 
 .download-eyebrow {
   margin: 0;
-  color: var(--text-muted);
+  color: var(--shell-text-muted);
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
@@ -307,145 +310,156 @@ onUnmounted(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: var(--text-primary);
+  color: var(--shell-text);
 }
 
 .download-form {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   min-height: 0;
 }
 
 .download-form__scroll {
   display: flex;
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: 8px;
   min-height: 0;
-  overflow: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding-right: 2px;
 }
 
-.download-form__footer {
-  display: grid;
-  flex: 0 0 auto;
-  gap: 6px;
-}
-
-.config-summary {
+.config-summary,
+.config-missing {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
-  padding: 8px 9px;
-  border: 1px solid var(--accent-border);
+  padding: 9px;
+  border: 1px solid var(--surface-border);
   border-radius: 8px;
-  background: var(--accent-soft);
+  background: var(--surface-bg);
 }
 
-.config-summary__text {
+.config-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.config-summary__content {
   display: grid;
   gap: 2px;
   min-width: 0;
 }
 
-.config-summary__text strong,
-.config-summary__text span {
+.config-summary strong,
+.config-summary span,
+.config-missing strong,
+.config-missing span {
+  min-width: 0;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-.config-summary__text strong {
-  color: var(--text-primary);
+.config-summary strong,
+.config-missing strong {
+  color: var(--shell-text);
   font-size: 12px;
 }
 
-.config-summary__text span {
-  color: var(--text-muted);
+.config-summary span,
+.config-missing span {
+  color: var(--shell-text-muted);
   font-size: 11px;
 }
 
-.config-summary__button {
-  height: 28px;
-  border: 1px solid var(--accent-border);
-  border-radius: 7px;
-  padding: 0 10px;
-  background: var(--button-surface);
-  color: var(--button-text);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.config-fields {
-  display: grid;
-  gap: 8px;
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 82px;
-  gap: 8px;
-}
-
-.field {
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-}
-
-.field--secret {
-  grid-column: 1 / -1;
-}
-
-.field span {
-  color: var(--text-muted);
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.field input {
-  min-width: 0;
-  height: 30px;
-  border: 1px solid var(--accent-border);
-  border-radius: 7px;
-  padding: 0 9px;
-  background: var(--field-surface);
-  color: var(--text-primary);
-  font: inherit;
-  font-size: 12px;
-}
-
-.field input:focus {
-  outline: 2px solid var(--accent-border);
-  border-color: var(--accent);
-  background: var(--field-surface-strong);
-}
-
-.status-message {
+.config-help {
   margin: 0;
-  min-height: 16px;
-  color: var(--text-primary);
+  color: var(--shell-text-muted);
   font-size: 11px;
   line-height: 1.35;
 }
 
-.status-message--error {
-  color: #b91c1c;
+.resource-list {
+  display: grid;
+  gap: 7px;
+  flex: 0 0 auto;
+  padding: 8px;
+  border: 1px solid var(--surface-border);
+  border-radius: 9px;
+  background: var(--surface-bg);
+}
+
+.resource-card {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid var(--surface-border);
+  border-radius: 8px;
+  background: var(--surface-bg-strong);
+}
+
+.resource-index {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--button-text);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.resource-main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.resource-main strong,
+.resource-main span {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.resource-main strong {
+  color: var(--shell-text);
+  font-size: 12px;
+}
+
+.resource-main span {
+  color: var(--shell-text-muted);
+  font-size: 11px;
+}
+
+.resource-uri {
+  direction: ltr;
 }
 
 .submit-button {
-  height: 38px;
+  height: 30px;
+  min-width: 108px;
   border: 0;
-  border-radius: 10px;
+  border-radius: 8px;
   background: linear-gradient(180deg, var(--accent), var(--accent-strong));
-  color: #ffffff;
-  font-size: 14px;
+  color: var(--button-text);
+  padding: 0 10px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0;
-  box-shadow: 0 10px 20px var(--accent-shadow);
+  box-shadow: 0 8px 16px var(--accent-shadow);
   cursor: pointer;
 }
 
@@ -455,12 +469,12 @@ onUnmounted(() => {
     color-mix(in srgb, var(--accent) 84%, #ffffff),
     var(--accent-strong)
   );
-  box-shadow: 0 12px 24px var(--accent-shadow);
+  box-shadow: 0 10px 20px var(--accent-shadow);
 }
 
 .submit-button:active:not(:disabled) {
   transform: translateY(1px);
-  box-shadow: 0 6px 14px var(--accent-shadow);
+  box-shadow: 0 5px 12px var(--accent-shadow);
 }
 
 .submit-button:disabled {
@@ -483,7 +497,7 @@ onUnmounted(() => {
 
 .empty-state__body {
   margin: 8px 0 0;
-  color: var(--text-muted);
+  color: var(--shell-text-muted);
   font-size: 13px;
   line-height: 1.45;
 }

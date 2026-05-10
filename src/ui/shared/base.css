@@ -13,16 +13,21 @@ body,
 }
 
 :root {
-  color: inherit;
+  color: #0f172a;
   font-family: "SF Pro Display", "SF Pro Text", "PingFang SC", sans-serif;
   background: transparent;
 }
 
 body {
   overflow: hidden;
-  color: inherit;
+  color: #0f172a;
   font-family: inherit;
   background: transparent;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root { color: #e2e8f0; }
+  body { color: #e2e8f0; }
 }
 
 button,
