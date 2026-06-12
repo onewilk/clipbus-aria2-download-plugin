@@ -1,4 +1,4 @@
-import type { PluginDetectorHandler } from "@pasty/plugin-sdk/runtime";
+import type { PluginDetectorHandler } from "@clipbus/plugin-sdk/runtime";
 import { SETTINGS_PREFIX } from "../../shared/constants";
 import type { PublicRpcConfig, RpcConfig } from "./types";
 
