@@ -18,5 +18,10 @@ await build({
   format: "cjs",
   platform: "node",
   target: "node18",
-  logLevel: "info"
+  logLevel: "info",
+  // Unwrap `export default` (which esbuild emits as `module.exports.default = …`)
+  // into the bare `module.exports = …` the host bridge require()s. We can't use
+  // TS `export =` in the entry because runtime tests load the .ts source via
+  // Node's --experimental-strip-types, which rejects that syntax.
+  footer: { js: "if (typeof module.exports.default !== 'undefined') module.exports = module.exports.default;" }
 });

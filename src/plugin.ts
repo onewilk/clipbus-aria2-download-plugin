@@ -1,4 +1,4 @@
-import { definePlugin } from "@pasty/plugin-sdk/runtime";
+import { definePlugin } from "@clipbus/plugin-sdk/runtime";
 import { aria2DownloadFeature } from "./features/aria2-download/feature";
 
 export default definePlugin({
