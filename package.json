@@ -1,8 +1,8 @@
 {
-  "name": "@pasty/aira2-plugin",
+  "name": "@clipbus/aira2-plugin",
   "private": true,
   "version": "2.0.0",
-  "description": "Pasty plugin that detects download links and submits them to aria2 RPC.",
+  "description": "Clipbus plugin that detects download links and submits them to aria2 RPC.",
   "engines": {
     "node": ">=18.0.0"
   },

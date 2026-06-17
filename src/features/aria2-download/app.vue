@@ -39,7 +39,7 @@
         <div class="config-card__content">
           <p class="eyebrow">aria2 RPC</p>
           <strong>Failed to read aria2 RPC settings.</strong>
-          <span>Please configure them in Pasty external settings first.</span>
+          <span>Please configure them in Clipbus external settings first.</span>
         </div>
         <div class="config-actions">
           <button class="submit-button" type="button" disabled>

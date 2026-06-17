@@ -65,7 +65,7 @@ function payloadFromArtifact(artifact) {
 test("manifest registers new SDK runtime, download detector, and bounded renderer height", () => {
   const manifest = loadManifest();
 
-  assert.equal(manifest.plugin.id, "plugin.pasty.aria2");
+  assert.equal(manifest.plugin.id, "plugin.clipbus.aria2");
   assert.equal(manifest.runtime.nodeEntry, "dist/plugin.cjs");
   assert.equal(manifest.detectors.length, 1);
   assert.equal(manifest.attachmentRenderers.length, 1);
@@ -74,11 +74,11 @@ test("manifest registers new SDK runtime, download detector, and bounded rendere
   const detector = manifest.detectors.find((entry) => entry.id === "aira2-link-detector");
   assert.ok(detector);
   assert.deepEqual(detector.supportedInputKinds, ["text", "path_reference"]);
-  assert.deepEqual(detector.attachmentTypes, ["plugin.pasty.aria2.download"]);
+  assert.deepEqual(detector.attachmentTypes, ["plugin.clipbus.aria2.download"]);
 
   const renderer = manifest.attachmentRenderers.find((entry) => entry.id === "aira2-download-renderer");
   assert.ok(renderer);
-  assert.equal(renderer.attachmentType, "plugin.pasty.aria2.download");
+  assert.equal(renderer.attachmentType, "plugin.clipbus.aria2.download");
   assert.deepEqual(renderer.height, { min: 140, max: 480 });
   assert.equal(renderer.uiEntry, "renderers/aira2-download-renderer/index.html");
 });
@@ -102,7 +102,7 @@ test("download detector emits artifact for supported text links", async () => {
   ].join("\n")));
 
   assert.equal(artifacts.length, 1);
-  assert.equal(artifacts[0].attachmentType, "plugin.pasty.aria2.download");
+  assert.equal(artifacts[0].attachmentType, "plugin.clipbus.aria2.download");
   assert.equal(artifacts[0].searchProjection.scope, "download");
 
   const payload = payloadFromArtifact(artifacts[0]);
@@ -126,11 +126,11 @@ test("download detector reads aria2 defaults from external settings", async () =
   const artifacts = await runtime.detectors["aira2-link-detector"].detect(
     textInput("https://example.com/file.zip"),
     settingsContext({
-      "plugin.pasty.aria2.rpcProtocol": "https",
-      "plugin.pasty.aria2.rpcHost": "aria2.local",
-      "plugin.pasty.aria2.rpcPort": 9443,
-      "plugin.pasty.aria2.rpcSecret": "configured-secret",
-      "plugin.pasty.aria2.dir": "/downloads",
+      "plugin.clipbus.aria2.rpcProtocol": "https",
+      "plugin.clipbus.aria2.rpcHost": "aria2.local",
+      "plugin.clipbus.aria2.rpcPort": 9443,
+      "plugin.clipbus.aria2.rpcSecret": "configured-secret",
+      "plugin.clipbus.aria2.dir": "/downloads",
       "plugin.other.rpcSecret": "must-not-be-read"
     })
   );
@@ -149,11 +149,11 @@ test("download detector reads aria2 defaults from external settings", async () =
 test("download detector falls back to getAll when single setting reads are empty", async () => {
   const runtime = loadRuntime();
   const settings = {
-    "plugin.pasty.aria2.rpcProtocol": "http",
-    "plugin.pasty.aria2.rpcHost": "127.0.0.1",
-    "plugin.pasty.aria2.rpcPort": "16800",
-    "plugin.pasty.aria2.rpcSecret": "configured-secret",
-    "plugin.pasty.aria2.dir": "~/Downloads"
+    "plugin.clipbus.aria2.rpcProtocol": "http",
+    "plugin.clipbus.aria2.rpcHost": "127.0.0.1",
+    "plugin.clipbus.aria2.rpcPort": "16800",
+    "plugin.clipbus.aria2.rpcSecret": "configured-secret",
+    "plugin.clipbus.aria2.dir": "~/Downloads"
   };
   const artifacts = await runtime.detectors["aira2-link-detector"].detect(
     textInput("https://example.com/file.zip"),
@@ -278,8 +278,8 @@ test("download renderer resolves valid payload and hides invalid payload", async
     attachments: [],
     attachment: {
       historyID: "item-1",
-      owner: "plugin.pasty.aria2",
-      attachmentType: "plugin.pasty.aria2.download",
+      owner: "plugin.clipbus.aria2",
+      attachmentType: "plugin.clipbus.aria2.download",
       attachmentKey: "download-file",
       payloadJson
     }
@@ -296,8 +296,8 @@ test("download renderer resolves valid payload and hides invalid payload", async
     attachments: [],
     attachment: {
       historyID: "item-1",
-      owner: "plugin.pasty.aria2",
-      attachmentType: "plugin.pasty.aria2.download",
+      owner: "plugin.clipbus.aria2",
+      attachmentType: "plugin.clipbus.aria2.download",
       attachmentKey: "broken",
       payloadJson: "{}"
     }
@@ -310,11 +310,11 @@ test("readConfig message returns public config without RPC secret", async () => 
   const result = await runtime.messageHandlers["aria2.readConfig"](
     undefined,
     settingsContext({
-      "plugin.pasty.aria2.rpcProtocol": "http",
-      "plugin.pasty.aria2.rpcHost": "127.0.0.1",
-      "plugin.pasty.aria2.rpcPort": "16800",
-      "plugin.pasty.aria2.rpcSecret": "configured-secret",
-      "plugin.pasty.aria2.dir": "~/Downloads"
+      "plugin.clipbus.aria2.rpcProtocol": "http",
+      "plugin.clipbus.aria2.rpcHost": "127.0.0.1",
+      "plugin.clipbus.aria2.rpcPort": "16800",
+      "plugin.clipbus.aria2.rpcSecret": "configured-secret",
+      "plugin.clipbus.aria2.dir": "~/Downloads"
     })
   );
 
@@ -370,11 +370,11 @@ test("submitDownloads message submits aria2 addUri through JSON-RPC", async () =
         }
       },
       settingsContext({
-        "plugin.pasty.aria2.rpcProtocol": "http",
-        "plugin.pasty.aria2.rpcHost": "settings-host",
-        "plugin.pasty.aria2.rpcPort": "16800",
-        "plugin.pasty.aria2.rpcSecret": "secret",
-        "plugin.pasty.aria2.dir": "/settings/downloads"
+        "plugin.clipbus.aria2.rpcProtocol": "http",
+        "plugin.clipbus.aria2.rpcHost": "settings-host",
+        "plugin.clipbus.aria2.rpcPort": "16800",
+        "plugin.clipbus.aria2.rpcSecret": "secret",
+        "plugin.clipbus.aria2.dir": "/settings/downloads"
       })
     );
 
