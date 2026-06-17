@@ -182,6 +182,43 @@ test("download detector falls back to getAll when single setting reads are empty
   });
 });
 
+test("download detector reads settings when getAll returns visible short keys", async () => {
+  const runtime = loadRuntime();
+  const artifacts = await runtime.detectors["aira2-link-detector"].detect(
+    textInput("https://example.com/file.zip"),
+    {
+      host: {
+        settings: {
+          async get() {
+            return { value: null };
+          },
+          async getAll() {
+            return {
+              settings: {
+                rpcProtocol: "http",
+                rpcHost: "127.0.0.1",
+                rpcPort: "16800",
+                rpcSecret: "configured-secret",
+                dir: "~/Downloads"
+              }
+            };
+          }
+        }
+      }
+    }
+  );
+
+  const payload = payloadFromArtifact(artifacts[0]);
+  assert.deepEqual(payload.defaults, {
+    rpcProtocol: "http",
+    rpcHost: "127.0.0.1",
+    rpcPort: 16800,
+    rpcSecret: "configured-secret",
+    dir: "~/Downloads",
+    configReady: true
+  });
+});
+
 test("download detector decodes thunder links", async () => {
   const runtime = loadRuntime();
   const thunder = `thunder://${Buffer.from("AAhttp://example.com/file.zipZZ").toString("base64")}`;
@@ -326,6 +363,19 @@ test("readConfig message returns public config without RPC secret", async () => 
     configReady: true
   });
   assert.equal(Object.hasOwn(result, "rpcSecret"), false);
+});
+
+test("readConfig message tolerates missing runtime context", async () => {
+  const runtime = loadRuntime();
+  const result = await runtime.messageHandlers["aria2.readConfig"](undefined);
+
+  assert.deepEqual(result, {
+    rpcProtocol: "http",
+    rpcHost: "",
+    rpcPort: "",
+    dir: "",
+    configReady: false
+  });
 });
 
 test("submitDownloads message submits aria2 addUri through JSON-RPC", async () => {

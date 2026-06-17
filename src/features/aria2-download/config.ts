@@ -4,6 +4,11 @@ import type { PublicRpcConfig, RpcConfig } from "./types";
 
 type DetectorContext = NonNullable<Parameters<PluginDetectorHandler["detect"]>[1]>;
 type HostClient = NonNullable<DetectorContext["host"]>;
+type SettingsClient = HostClient["settings"];
+type SettingName = "rpcProtocol" | "rpcHost" | "rpcPort" | "rpcSecret" | "dir";
+
+const RUNTIME_SETTING_NAMES: SettingName[] = ["rpcProtocol", "rpcHost", "rpcPort", "rpcSecret", "dir"];
+const PUBLIC_SETTING_NAMES: SettingName[] = ["rpcProtocol", "rpcHost", "rpcPort", "dir"];
 
 export const DEFAULT_RPC_CONFIG: RpcConfig = {
   rpcProtocol: "http",
@@ -51,7 +56,7 @@ export function toPublicRpcConfig(config: RpcConfig): PublicRpcConfig {
 
 function settingValue(settings: Record<string, unknown>, key: string): unknown {
   const fullKey = `${SETTINGS_PREFIX}${key}`;
-  return settings[fullKey];
+  return settings[fullKey] ?? settings[key];
 }
 
 function unwrapSettingResponse(response: unknown): unknown {
@@ -61,47 +66,52 @@ function unwrapSettingResponse(response: unknown): unknown {
   return response;
 }
 
-async function readSettingValue(host: HostClient | undefined, key: string): Promise<unknown> {
+function unwrapSettingsResponse(response: unknown): Record<string, unknown> {
+  if (
+    response &&
+    typeof response === "object" &&
+    "settings" in response &&
+    response.settings &&
+    typeof response.settings === "object" &&
+    !Array.isArray(response.settings)
+  ) {
+    return response.settings as Record<string, unknown>;
+  }
+  return {};
+}
+
+async function readSettingValue(settings: SettingsClient | undefined, key: SettingName): Promise<unknown> {
   const fullKey = `${SETTINGS_PREFIX}${key}`;
 
   try {
-    return unwrapSettingResponse(await host?.settings?.get({ key: fullKey })) ?? null;
+    return unwrapSettingResponse(await settings?.get({ key: fullKey })) ?? null;
   } catch {
     return null;
   }
 }
 
-async function readConfigViaGet(host: HostClient): Promise<RpcConfig> {
-  const [rpcProtocol, rpcHost, rpcPort, rpcSecret, dir] = await Promise.all([
-    readSettingValue(host, "rpcProtocol"),
-    readSettingValue(host, "rpcHost"),
-    readSettingValue(host, "rpcPort"),
-    readSettingValue(host, "rpcSecret"),
-    readSettingValue(host, "dir")
-  ]);
+async function readConfigViaGet(settings: SettingsClient, keys: SettingName[]): Promise<RpcConfig> {
+  const values = await Promise.all(keys.map(async (key) => [key, await readSettingValue(settings, key)] as const));
+  const config = Object.fromEntries(values) as Partial<Record<SettingName, unknown>>;
 
-  return normalizeRpcConfig({ rpcProtocol, rpcHost, rpcPort, rpcSecret, dir } as Partial<RpcConfig>);
+  return normalizeRpcConfig(config as Partial<RpcConfig>);
 }
 
-async function readConfigViaGetAll(host: HostClient): Promise<RpcConfig> {
-  const response = await host.settings.getAll();
-  const settings = response.settings || {};
-  return normalizeRpcConfig({
-    rpcProtocol: settingValue(settings, "rpcProtocol"),
-    rpcHost: settingValue(settings, "rpcHost"),
-    rpcPort: settingValue(settings, "rpcPort"),
-    rpcSecret: settingValue(settings, "rpcSecret"),
-    dir: settingValue(settings, "dir")
-  } as Partial<RpcConfig>);
+async function readConfigViaGetAll(settings: SettingsClient, keys: SettingName[]): Promise<RpcConfig> {
+  const response = await settings.getAll();
+  const values = unwrapSettingsResponse(response);
+  const config = Object.fromEntries(keys.map((key) => [key, settingValue(values, key)])) as Partial<Record<SettingName, unknown>>;
+
+  return normalizeRpcConfig(config as Partial<RpcConfig>);
 }
 
-export async function readExternalRpcConfig(host: HostClient | undefined): Promise<RpcConfig> {
-  if (!host?.settings) {
+async function readRpcConfigFromSettings(settings: SettingsClient | undefined, keys: SettingName[]): Promise<RpcConfig> {
+  if (!settings) {
     return normalizeRpcConfig(DEFAULT_RPC_CONFIG);
   }
 
   try {
-    const config = await readConfigViaGet(host);
+    const config = await readConfigViaGet(settings, keys);
     if (config.configReady) {
       return config;
     }
@@ -110,8 +120,16 @@ export async function readExternalRpcConfig(host: HostClient | undefined): Promi
   }
 
   try {
-    return await readConfigViaGetAll(host);
+    return await readConfigViaGetAll(settings, keys);
   } catch {
     return normalizeRpcConfig(DEFAULT_RPC_CONFIG);
   }
+}
+
+export async function readExternalRpcConfig(host: HostClient | undefined): Promise<RpcConfig> {
+  return readRpcConfigFromSettings(host?.settings, RUNTIME_SETTING_NAMES);
+}
+
+export async function readPublicRpcConfigFromSettings(settings: SettingsClient | undefined): Promise<PublicRpcConfig> {
+  return toPublicRpcConfig(await readRpcConfigFromSettings(settings, PUBLIC_SETTING_NAMES));
 }
