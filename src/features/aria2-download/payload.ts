@@ -1,4 +1,4 @@
-import type { PluginDetectorInput } from "@pasty/plugin-sdk/runtime";
+import type { PluginDetectorInput } from "@clipbus/plugin-sdk/runtime";
 import { ATTACHMENT_TYPE } from "../../shared/constants";
 import { normalizeRpcConfig } from "./config";
 import { extractDownloadResources } from "./matching";
