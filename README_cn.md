@@ -39,13 +39,28 @@ Aria2 Downloader 是一个 Clipbus 插件，用于从剪贴板条目中识别可
 
 ## ⚙️ External Settings
 
-Clipbus 可以向插件 runtime 和 UI 提供本机只读 external settings。本插件会读取以下 key：
+Clipbus 可以向插件 runtime 和 UI 提供本机只读 external settings。请使用以下对象配置插件：
 
-- `plugin.clipbus.aria2.rpcProtocol`：`http` 或 `https`
-- `plugin.clipbus.aria2.rpcHost`：aria2 RPC 地址
-- `plugin.clipbus.aria2.rpcPort`：aria2 RPC 端口
-- `plugin.clipbus.aria2.rpcSecret`：aria2 RPC 密钥
-- `plugin.clipbus.aria2.dir`：可选下载目录
+```jsonc
+{
+  // aria2 RPC 协议："http" 或 "https"
+  "plugin.clipbus.aria2.rpcProtocol": "http",
+
+  // aria2 RPC 地址
+  "plugin.clipbus.aria2.rpcHost": "127.0.0.1",
+
+  // aria2 RPC 端口
+  "plugin.clipbus.aria2.rpcPort": "16800",
+
+  // aria2 RPC 密钥
+  "plugin.clipbus.aria2.rpcSecret": "diOzvyOnub7g5yjo",
+
+  // 可选下载目录
+  "plugin.clipbus.aria2.dir": "~/Downloads"
+}
+```
+
+如果 Clipbus 设置编辑器要求严格 JSON，请在保存前删除注释。
 
 这些配置由 Clipbus 本机设置维护，插件只读取，不写入。当前 Clipbus plugin SDK 提供 settings 读取 API，没有 settings 写入 API。插件不提供内置 RPC 默认值。
 

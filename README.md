@@ -39,13 +39,28 @@ File names are inferred from the URL path when possible. If a URL contains an `a
 
 ## ⚙️ External Settings
 
-Clipbus provides local, read-only external settings to plugin runtime and UI code. This plugin reads these keys:
+Clipbus provides local, read-only external settings to plugin runtime and UI code. Configure the plugin with the following object:
 
-- `plugin.clipbus.aria2.rpcProtocol`: `http` or `https`
-- `plugin.clipbus.aria2.rpcHost`: aria2 RPC host
-- `plugin.clipbus.aria2.rpcPort`: aria2 RPC port
-- `plugin.clipbus.aria2.rpcSecret`: aria2 RPC secret
-- `plugin.clipbus.aria2.dir`: optional download directory
+```jsonc
+{
+  // aria2 RPC protocol: "http" or "https"
+  "plugin.clipbus.aria2.rpcProtocol": "http",
+
+  // aria2 RPC host
+  "plugin.clipbus.aria2.rpcHost": "127.0.0.1",
+
+  // aria2 RPC port
+  "plugin.clipbus.aria2.rpcPort": "16800",
+
+  // aria2 RPC secret
+  "plugin.clipbus.aria2.rpcSecret": "diOzvyOnub7g5yjo",
+
+  // Optional download directory
+  "plugin.clipbus.aria2.dir": "~/Downloads"
+}
+```
+
+If the Clipbus settings editor requires strict JSON, remove the comments before saving.
 
 These settings are local to Clipbus and are not written by the plugin. The current Clipbus plugin SDK exposes settings read APIs, but no settings write API. The plugin does not provide built-in RPC defaults.
 
