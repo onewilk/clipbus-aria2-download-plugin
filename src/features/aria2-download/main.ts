@@ -11,7 +11,7 @@ const app = createApp(App);
 app.mount("#app");
 
 void clipbus.window.autoFit().catch(() => {
-  // Local browser previews do not provide the Pasty host bridge.
+  // Local browser previews do not provide the Clipbus host bridge.
 });
 
 autoFit({ min: 140, max: 480, target: document.getElementById("app") });

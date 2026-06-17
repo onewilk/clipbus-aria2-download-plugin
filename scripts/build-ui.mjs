@@ -13,7 +13,7 @@ const pages = [
   {
     name: "aira2-download-renderer",
     kind: "renderers",
-    globalName: "PastyDownloadPluginRenderer",
+    globalName: "ClipbusDownloadPluginRenderer",
     entry: path.resolve(projectRoot, "src/features/aria2-download/main.ts"),
     template: path.resolve(projectRoot, "src/features/aria2-download/index.html")
   }

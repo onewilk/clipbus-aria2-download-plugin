@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "plugin": {
-    "id": "plugin.pasty.aria2",
+    "id": "plugin.clipbus.aria2",
     "title": "Aria2 Downloader",
     "version": "2.0.0"
   },
@@ -18,7 +18,7 @@
     {
       "id": "aira2-download-renderer",
       "title": "Aria2 Download",
-      "attachmentType": "plugin.pasty.aria2.download",
+      "attachmentType": "plugin.clipbus.aria2.download",
       "height": {
         "min": 140,
         "max": 480
@@ -35,7 +35,7 @@
         "path_reference"
       ],
       "attachmentTypes": [
-        "plugin.pasty.aria2.download"
+        "plugin.clipbus.aria2.download"
       ]
     }
   ],
