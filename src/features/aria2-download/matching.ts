@@ -1,5 +1,5 @@
 import path from "node:path";
-import type { PluginContentEnvelope, PluginPathEntry } from "@pasty/plugin-sdk/runtime";
+import type { PluginContentEnvelope, PluginPathEntry } from "@clipbus/plugin-sdk/runtime";
 import type { DownloadResource, DownloadResourceType } from "./types";
 
 const MAX_INPUT_CHARS = 100_000;

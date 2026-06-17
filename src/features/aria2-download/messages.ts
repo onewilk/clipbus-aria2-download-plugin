@@ -1,4 +1,4 @@
-import { defineMessage } from "@pasty/plugin-sdk/ui";
+import { defineMessage } from "@clipbus/plugin-sdk/ui";
 import { MESSAGE_KEYS } from "../../shared/constants";
 import type { PublicRpcConfig, SubmitDownloadsRequest, SubmitDownloadsResponse } from "./types";
 

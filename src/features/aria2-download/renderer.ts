@@ -1,4 +1,4 @@
-import type { PluginAttachmentRendererHandler } from "@pasty/plugin-sdk/runtime";
+import type { PluginAttachmentRendererHandler } from "@clipbus/plugin-sdk/runtime";
 import { HELP_ACTION_ID } from "../../shared/constants";
 import { decodeDownloadAttachmentPayload } from "./payload";
 

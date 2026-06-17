@@ -93,14 +93,14 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
-import { pasty } from "@pasty/plugin-sdk/ui";
+import { clipbus } from "@clipbus/plugin-sdk/ui";
 import { HELP_ACTION_ID, HELP_URL } from "../../shared/constants";
 import { decodeDownloadAttachmentPayload } from "./payloadDecode";
 import { readConfigMessage, submitDownloadsMessage } from "./messages";
 import type { DownloadAttachmentPayload, DownloadResource, PublicRpcConfig } from "./types";
 
-const attachment = ref(pasty.item.attachment.current());
-const theme = ref(pasty.theme.current());
+const attachment = ref(clipbus.item.attachment.current());
+const theme = ref(clipbus.theme.current());
 const payload = computed<DownloadAttachmentPayload | null>(() => {
   return decodeDownloadAttachmentPayload(attachment.value?.attachment.payloadJson);
 });
@@ -160,13 +160,13 @@ let submitTimeoutID: number | null = null;
 let noticeTimeoutID: number | null = null;
 
 onMounted(() => {
-  disposeAttachment = pasty.item.attachment.on((next) => {
+  disposeAttachment = clipbus.item.attachment.on((next) => {
     attachment.value = next;
   });
-  disposeTheme = pasty.theme.on((next) => {
+  disposeTheme = clipbus.theme.on((next) => {
     theme.value = next;
   });
-  disposeHostInvoke = pasty.attachmentRenderer.onHostInvoke.on(({ buttonID }) => {
+  disposeHostInvoke = clipbus.attachmentRenderer.onHostInvoke.on(({ buttonID }) => {
     if (buttonID === HELP_ACTION_ID) {
       void openHelp();
     }
@@ -196,7 +196,7 @@ async function readConfig(): Promise<void> {
     applyConfig(await readConfigMessage.invoke({}));
   } catch (error) {
     form.configReady = false;
-    await pasty.console.log({
+    await clipbus.console.log({
       level: "error",
       message: `Failed to read aria2 RPC settings: ${error instanceof Error ? error.message : String(error)}`
     });
@@ -234,13 +234,13 @@ async function submit(): Promise<void> {
         dir: form.dir
       }
     }, { timeoutMs: 30000 });
-    await pasty.console.log({
+    await clipbus.console.log({
       level: "info",
       message: `Submitted ${result.gids.length} aria2 download${result.gids.length === 1 ? "" : "s"}`
     });
     showNotice("success", "Check the aria2 app for download tasks.");
   } catch (error) {
-    await pasty.console.log({
+    await clipbus.console.log({
       level: "error",
       message: error instanceof Error ? error.message : String(error)
     });
@@ -300,7 +300,7 @@ function clearNotice(): void {
 }
 
 async function openHelp(): Promise<void> {
-  await pasty.navigation.openUrl({ url: HELP_URL });
+  await clipbus.navigation.openUrl({ url: HELP_URL });
 }
 
 function clearSubmitTimeout(): void {

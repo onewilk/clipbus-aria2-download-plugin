@@ -1,4 +1,4 @@
-import type { PluginDetectorArtifact, PluginDetectorHandler } from "@pasty/plugin-sdk/runtime";
+import type { PluginDetectorArtifact, PluginDetectorHandler } from "@clipbus/plugin-sdk/runtime";
 import { ATTACHMENT_TYPE } from "../../shared/constants";
 import { readExternalRpcConfig } from "./config";
 import {
