@@ -17,12 +17,12 @@ export const aria2DownloadFeature = {
     [RENDERER_ID]: downloadRenderer
   },
   messageHandlers: {
-    [MESSAGE_KEYS.readConfig]: async (_request: unknown, ctx: RuntimeMessageContext) => {
-      const config = await readExternalRpcConfig(ctx.host);
+    [MESSAGE_KEYS.readConfig]: async (_request: unknown, ctx?: RuntimeMessageContext) => {
+      const config = await readExternalRpcConfig(ctx?.host);
       return toPublicRpcConfig(config);
     },
-    [MESSAGE_KEYS.submitDownloads]: async (request: unknown, ctx: RuntimeMessageContext) => {
-      const config = await readExternalRpcConfig(ctx.host);
+    [MESSAGE_KEYS.submitDownloads]: async (request: unknown, ctx?: RuntimeMessageContext) => {
+      const config = await readExternalRpcConfig(ctx?.host);
       return submitDownloads(request as SubmitDownloadsRequest, config);
     }
   }

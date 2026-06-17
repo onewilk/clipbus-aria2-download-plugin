@@ -95,6 +95,7 @@
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { clipbus } from "@clipbus/plugin-sdk/ui";
 import { HELP_ACTION_ID, HELP_URL } from "../../shared/constants";
+import { readPublicRpcConfigFromSettings } from "./config";
 import { decodeDownloadAttachmentPayload } from "./payloadDecode";
 import { readConfigMessage, submitDownloadsMessage } from "./messages";
 import type { DownloadAttachmentPayload, DownloadResource, PublicRpcConfig } from "./types";
@@ -184,6 +185,9 @@ onUnmounted(() => {
 
 watch(payload, (nextPayload) => {
   selectedResourceIDs.value = new Set(nextPayload?.resources.map((resource) => resource.id) || []);
+  if (nextPayload?.defaults) {
+    applyConfig(nextPayload.defaults);
+  }
 }, { immediate: true });
 
 function hasCompleteConfig(): boolean {
@@ -193,9 +197,21 @@ function hasCompleteConfig(): boolean {
 
 async function readConfig(): Promise<void> {
   try {
+    applyConfig(await readPublicRpcConfigFromSettings(clipbus.settings));
+    if (form.configReady) {
+      return;
+    }
+  } catch (error) {
+    await clipbus.console.log({
+      level: "warn",
+      message: `Failed to read aria2 RPC settings from UI settings: ${error instanceof Error ? error.message : String(error)}`
+    });
+  }
+
+  try {
     applyConfig(await readConfigMessage.invoke({}));
   } catch (error) {
-    form.configReady = false;
+    form.configReady = form.configReady && hasCompleteConfig();
     await clipbus.console.log({
       level: "error",
       message: `Failed to read aria2 RPC settings: ${error instanceof Error ? error.message : String(error)}`
